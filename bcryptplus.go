@@ -8,9 +8,10 @@ import (
 )
 
 // Errors
-var ErrNotInitialized = errors.New("bcryptplus: Call bcryptplus.Init(minHashTimeMillis) first")
-var ErrMinHashTimeTooHigh = errors.New("bcryptplus: minHashTimeMillis too high")
-var ErrSearchAllFalse = errors.New("bcryptplus: Predicate is false for all values in range")
+var (
+	ErrMinHashTimeTooHigh = errors.New("bcryptplus: minHashTimeMillis too high")
+	ErrSearchAllFalse = errors.New("bcryptplus: Predicate is false for all values in range")
+)
 
 // The main Hasher struct
 type Hasher struct {
@@ -61,9 +62,10 @@ func (self *Hasher) Hash(password []byte) ([]byte, error) {
 }
 
 // Checks if the password matches the hash
-// If the cost of the given hash is below the cost we currently use, the 2nd return value will contain a new and stronger hash
-// If the 2nd return value is present, you must update the hash for the password to it or you're missing out on the security benefits and wasting CPU cycles
-// If the given hash is already strong enough, the 2nd argument will be nil
+//
+// If the cost of the given hash is below the cost we currently use, the 2nd return value will contain a new and stronger hash.
+// If the 2nd return value is present, you must update the hash for the password to it or you're missing out on the security benefits and wasting CPU cycles.
+// If the given hash is already strong enough, the 2nd argument will be nil.
 func (self *Hasher) Validate(password []byte, hash []byte) (bool, []byte, error) {
 	err := bcrypt.CompareHashAndPassword(hash, password)
 
