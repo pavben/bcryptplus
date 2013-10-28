@@ -7,21 +7,20 @@ import (
 	"fmt"
 )
 
-var ErrNotInitialized = errors.New("bcryptplus: Call bcryptplus.Init(minHashTime) first")
-
-var ErrMinHashTimeTooHigh = errors.New("bcryptplus: minHashTime too high")
-
+// Errors
+var ErrNotInitialized = errors.New("bcryptplus: Call bcryptplus.Init(minHashTimeMillis) first")
+var ErrMinHashTimeTooHigh = errors.New("bcryptplus: minHashTimeMillis too high")
 var ErrSearchAllFalse = errors.New("bcryptplus: Predicate is false for all values in range")
 
+// The main Hasher struct
 type Hasher struct {
 	currentCost int
-	minHashTime int
+	minHashTimeMillis int64
 }
 
-func NewHasher(minHashTime int) (*Hasher, error) {
-	fmt.Printf("%d", MaxInt)
-
-	cost, err := findFirstTrue(bcrypt.DefaultCost, bcrypt.MaxCost, predicateCostTimeFunction(minHashTime))
+// Creates a new Hasher
+func NewHasher(minHashTimeMillis int64) (*Hasher, error) {
+	cost, err := findFirstTrue(bcrypt.DefaultCost, bcrypt.MaxCost, predicateCostTimeFunction(minHashTimeMillis))
 
 	if err != nil {
 		if err == ErrSearchAllFalse {
@@ -32,11 +31,12 @@ func NewHasher(minHashTime int) (*Hasher, error) {
 	} else {
 		return &Hasher {
 			currentCost: cost,
-			minHashTime: minHashTime,
+			minHashTimeMillis: minHashTimeMillis,
 		}, nil
 	}
 }
 
+// Hashes the given password
 func (self *Hasher) Hash(password []byte) ([]byte, error) {
 	for {
 		if (self.currentCost > bcrypt.MaxCost) {
@@ -49,7 +49,7 @@ func (self *Hasher) Hash(password []byte) ([]byte, error) {
 			return nil, err
 		} else {
 			// if it took long enough, break
-			if timeMillis >= self.minHashTime {
+			if timeMillis >= self.minHashTimeMillis {
 				return hash, nil
 			} else {
 				fmt.Printf("hashing with currentCost %d was too fast: %dms\n", self.currentCost, timeMillis)
@@ -60,6 +60,10 @@ func (self *Hasher) Hash(password []byte) ([]byte, error) {
 	}
 }
 
+// Checks if the password matches the hash
+// If the cost of the given hash is below the cost we currently use, the 2nd return value will contain a new and stronger hash
+// If the 2nd return value is present, you must update the hash for the password to it or you're missing out on the security benefits and wasting CPU cycles
+// If the given hash is already strong enough, the 2nd argument will be nil
 func (self *Hasher) Validate(password []byte, hash []byte) (bool, []byte, error) {
 	err := bcrypt.CompareHashAndPassword(hash, password)
 
@@ -88,6 +92,8 @@ func (self *Hasher) Validate(password []byte, hash []byte) (bool, []byte, error)
 	}
 }
 
+// Returns the hash and the time in milliseconds that it took to hash
+// Any error condition would come directly from bcrypt
 func hashAndTime(password []byte, cost int) ([]byte, int64, error) {
 	startTime := time.Now()
 
@@ -102,20 +108,21 @@ func hashAndTime(password []byte, cost int) ([]byte, int64, error) {
 	}
 }
 
-func predicateCostTimeFunction(minHashTime int) (func(cost int) (bool, error)) {
+// Returns the function which, given a hash cost, decides if the hashing time with that cost is high enough
+func predicateCostTimeFunction(minHashTimeMillis int64) (func(cost int) (bool, error)) {
 	return func(cost int) (bool, error) {
 		timeMillis, err := estimateTimeForCost(cost)
 
 		if err != nil {
 			return false, err
 		} else {
-			fmt.Printf("hashing took %dms\n", timeMillis)
-			return timeMillis >= minHashTime, nil
+			return timeMillis >= minHashTimeMillis, nil
 		}
 	}
 }
 
-func estimateTimeForCost(cost int) (int, error) {
+// Given a cost, returns an estimate of how long the hashing takes in milliseconds
+func estimateTimeForCost(cost int) (int64, error) {
 	_, timeMillis, err := hashAndTime([]byte("password"), cost)
 
 	if err != nil {
@@ -126,10 +133,9 @@ func estimateTimeForCost(cost int) (int, error) {
 }
 
 func findFirstTrue(lo, hi int, p func(int) (bool, error)) (int, error) {
-	// TODO: consider the modified binary search instead of linear
+	// TODO: consider the modified binary search instead of linear for a potentially faster init
 
 	for i := lo; i <= hi; i++ {
-		fmt.Printf("trying %d\n", i)
 		isTrue, err := p(i)
 
 		if err != nil {
