@@ -6,7 +6,7 @@ A futureproof way of using bcrypt for hashing passwords. Specify the hash diffic
 
 #### How secure is bcryptplus?
 
-**bcryptplus** is a wrapper for http://code.google.com/p/go.crypto/bcrypt which dynamically determines the hashing cost. It will start at bcrypt's default cost (currently 10) and increase it as needed to meet your time requirement. That means bcryptplus will always be at least as secure as the library it wraps.
+**bcryptplus** is a wrapper for http://code.google.com/p/go.crypto/bcrypt which dynamically determines the hashing cost. It will start at bcrypt's default cost (currently 10) and increase it as needed to meet your time requirement, so it will always be at least as secure as the library it wraps if the hashing cost is not explicitly raised.
 
 #### How exactly do you measure the time that hashing takes?
 
@@ -33,14 +33,14 @@ func main() {
 	// create a new Hasher
 	hasher, err := bcryptplus.NewHasher(300)
 
-	password := []byte("password")
-
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		return
 	}
 
 	// hash the password
+	password := []byte("password")
+
 	hash, err := hasher.Hash(password)
 
 	if err != nil {

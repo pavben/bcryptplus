@@ -20,6 +20,9 @@ type Hasher struct {
 }
 
 // Creates a new Hasher
+//
+// minHashTimeMillis specifies the minimum time (in milliseconds) that this Hasher will enforce for producing hashes.
+// If hashing takes less than this minimum time, the hashing difficulty will be increased.
 func NewHasher(minHashTimeMillis int64) (*Hasher, error) {
 	cost, err := findFirstTrue(bcrypt.DefaultCost, bcrypt.MaxCost, predicateCostTimeFunction(minHashTimeMillis))
 
