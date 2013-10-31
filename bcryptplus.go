@@ -3,7 +3,7 @@ package bcryptplus
 import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"errors"
-	"time"
+	"github.com/pavben/monoclock"
 	"fmt"
 )
 
@@ -97,16 +97,14 @@ func (self *Hasher) Validate(password []byte, hash []byte) (bool, []byte, error)
 // Returns the hash and the time in milliseconds that it took to hash
 // Any error condition would come directly from bcrypt
 func hashAndTime(password []byte, cost int) ([]byte, int64, error) {
-	startTime := time.Now()
+	timer := monoclock.NewMonoTimer()
 
 	hash, err := bcrypt.GenerateFromPassword(password, cost)
 
 	if err != nil {
 		return nil, -1, err
 	} else {
-		duration := time.Since(startTime)
-
-		return hash, int64(duration / time.Millisecond), nil
+		return hash, timer.Value(), nil
 	}
 }
 
